@@ -61,8 +61,19 @@ namespace Amqp.Listener
         /// <param name="connection">The connection where attach was received.</param>
         /// <param name="session">The session where attach was received.</param>
         /// <param name="link">The link created in CreateLink call.</param>
-        /// <param name="attach">The received attach frame.</param>
+        /// <param name="attach">The received attach performative.</param>
         /// <returns>A boolean value indicating if attaching the link has completed.</returns>
         bool AttachLink(ListenerConnection connection, ListenerSession session, Link link, Attach attach);
+
+        /// <summary>
+        /// Detaches the link. If return value is true, the link is closed/detached. Otherwise the
+        /// implementation is responsible to send detach to move the link to end state.
+        /// </summary>
+        /// <param name="connection">The connection where attach was received.</param>
+        /// <param name="session">The session where attach was received.</param>
+        /// <param name="link">The link created in CreateLink call.</param>
+        /// <param name="detach">The received detach performative.</param>
+        /// <returns>A boolean value indicating if detaching the link has completed.</returns>
+        bool DetachLink(ListenerConnection connection, ListenerSession session, Link link, Detach detach);
     }
 }

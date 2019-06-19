@@ -161,43 +161,45 @@ namespace Amqp
             }
         }
 
-        internal bool OnDetach(Detach detach)
+        internal void OnDetach(Detach detach)
         {
             Error remoteError = detach.Error;
-            if (remoteError == null && this.detach && detach.Closed)
-            {
-                remoteError = new Error(ErrorCode.InternalError)
-                {
-                    Description = "Link is closed by peer though a detach was requested."
-                };
-            }
-
-            this.Error = remoteError;
 
             lock (this.ThisLock)
             {
                 if (this.state == LinkState.DetachSent)
                 {
+                    if (remoteError == null && this.detach && detach.Closed)
+                    {
+                        remoteError = new Error(ErrorCode.InternalError)
+                        {
+                            Description = "Link is closed by peer though a detach was requested."
+                        };
+                    }
+
                     this.state = LinkState.End;
                 }
                 else if (this.state == LinkState.Attached)
                 {
-                    this.SendDetach(null);
-                    this.state = LinkState.End;
+                    this.state = LinkState.DetachReceived;
                 }
                 else
                 {
                     throw new AmqpException(ErrorCode.IllegalState,
                         Fx.Format(SRAmqp.AmqpIllegalOperationState, "OnDetach", this.state));
                 }
-
-                this.OnClose(remoteError);
             }
 
-            this.session.RemoveLink(this, detach.Handle);
-            this.NotifyClosed(remoteError);
+            this.HandleDetach(detach, !this.detach, remoteError);
+        }
 
-            return true;
+        internal virtual void HandleDetach(Detach detach, bool closed, Error error)
+        {
+            this.detach = !closed;
+            this.Error = error;
+            this.OnClose(error);
+            this.session.RemoveLink(this, detach.Handle);
+            this.NotifyClosed(error);
         }
 
         internal abstract void OnFlow(Flow flow);

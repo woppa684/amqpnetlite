@@ -15,62 +15,55 @@
 //  limitations under the License.
 //  ------------------------------------------------------------------------------------
 
-namespace Amqp.Framing
+namespace Amqp.Listener
 {
-    using Amqp.Types;
+    using Amqp.Framing;
 
     /// <summary>
-    /// The class defines the performative to detach a Link Endpoint.
+    /// Provides the context to <see cref="ILinkProcessor"/> to process the received performative.
     /// </summary>
-    public sealed class Detach : DescribedList
+    public class DetachContext
     {
-        /// <summary>
-        /// Initializes a detach object.
-        /// </summary>
-        public Detach()
-            : base(Codec.Detach, 3)
+        internal DetachContext(ListenerLink link, Detach detach)
         {
+            this.Link = link;
+            this.Detach = detach;
         }
 
         /// <summary>
-        /// Gets or sets the handle field.
+        /// Gets the link associated with the context.
         /// </summary>
-        public uint Handle
+        public ListenerLink Link
         {
-            get { return this.Fields[0] == null ? uint.MinValue : (uint)this.Fields[0]; }
-            set { this.Fields[0] = value; }
+            get;
+            private set;
         }
 
         /// <summary>
-        /// Gets or sets the closed field.
+        /// Gets the detach performative associated with the context.
         /// </summary>
-        public bool Closed
+        public Detach Detach
         {
-            get { return this.Fields[1] == null ? false : (bool)this.Fields[1]; }
-            set { this.Fields[1] = value; }
+            get;
+            private set;
         }
 
         /// <summary>
-        /// Gets or sets the error field.
+        /// Completes the processing of the detach performative.
         /// </summary>
-        public Error Error
+        public void Complete()
         {
-            get { return (Error)this.Fields[2]; }
-            set { this.Fields[2] = value; }
+            this.Complete(this.Detach.Closed, null);
         }
 
-#if TRACE
         /// <summary>
-        /// Returns a string that represents the current object.
+        /// Completes the processing of the detach performative.
         /// </summary>
-        /// <returns></returns>
-        public override string ToString()
+        /// <param name="closed">True if the link endpoint is closed.</param>
+        /// <param name="error">The error to be sent to the remote peer.</param>
+        public void Complete(bool closed, Error error)
         {
-            return this.GetDebugString(
-                "detach",
-                new object[] { "handle", "closed", "error" },
-                this.Fields);
+            this.Link.CompleteDetach(this.Detach, closed, error);
         }
-#endif
     }
 }

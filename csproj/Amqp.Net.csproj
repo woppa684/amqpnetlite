@@ -62,6 +62,9 @@
     <Compile Include="..\src\Listener\ContextState.cs">
       <Link>Listener\ContextState.cs</Link>
     </Compile>
+    <Compile Include="..\src\Listener\DetachContext.cs">
+      <Link>Listener\DetachContext.cs</Link>
+    </Compile>
     <Compile Include="..\src\Listener\FlowContext.cs">
       <Link>Listener\FlowContext.cs</Link>
     </Compile>

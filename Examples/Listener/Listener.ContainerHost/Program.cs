@@ -59,6 +59,11 @@ namespace Listener.ContainerHost
         {
             SharedLinkEndpoint sharedLinkEndpoint = new SharedLinkEndpoint();
 
+            public void Process(DetachContext detachContext)
+            {
+                detachContext.Complete();
+            }
+
             public void Process(AttachContext attachContext)
             {
                 // start a task to process this request

@@ -29,5 +29,12 @@ namespace Amqp.Listener
         /// </summary>
         /// <param name="attachContext">Context of the received attach performative.</param>
         void Process(AttachContext attachContext);
+
+        /// <summary>
+        /// Processes a received detach performative to close/detach the link endpoint. The
+        /// implementation must call detachContext.Complete to complete the operation.
+        /// </summary>
+        /// <param name="detachContext">Context of the received detach performative.</param>
+        void Process(DetachContext detachContext);
     }
 }

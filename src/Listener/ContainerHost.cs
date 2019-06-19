@@ -401,6 +401,18 @@ namespace Amqp.Listener
             throw new AmqpException(ErrorCode.NotFound, "No processor was found at " + address);
         }
 
+        bool IContainer.DetachLink(ListenerConnection connection, ListenerSession session, Link link, Detach detach)
+        {
+            if (this.linkProcessor != null)
+            {
+                var listenerLink = (ListenerLink)link;
+                this.linkProcessor.Process(new DetachContext(listenerLink, detach));
+                return false;
+            }
+
+            return true;
+        }
+
         void OnLinkClosed(IAmqpObject sender, Error error)
         {
             ListenerLink link = (ListenerLink)sender;

@@ -60,6 +60,11 @@ namespace PeerToPeer.Server
 
         class LinkProcessor : ILinkProcessor
         {
+            public void Process(DetachContext detachContext)
+            {
+                detachContext.Complete();
+            }
+
             public void Process(AttachContext attachContext)
             {
                 if (!attachContext.Attach.Role)

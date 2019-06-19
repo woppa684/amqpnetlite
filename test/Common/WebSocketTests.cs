@@ -103,7 +103,7 @@ namespace Test.Amqp
             ListenerLink listenerLink = null;
 
             var linkProcessor = new TestLinkProcessor();
-            linkProcessor.SetHandler(a => { listenerLink = a.Link; return false; });
+            linkProcessor.SetAttachHandler(a => { listenerLink = a.Link; return false; });
             var host = new ContainerHost(new List<Uri>() { uri }, null, uri.UserInfo);
             host.Listeners[0].SASL.EnableExternalMechanism = true;
             host.Listeners[0].SSL.ClientCertificateRequired = true;

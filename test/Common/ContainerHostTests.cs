@@ -717,6 +717,54 @@ namespace Test.Amqp
         }
 
         [TestMethod]
+        public void ContainerHostLinkDetachTest()
+        {
+            string name = "ContainerHostLinkDetachTest";
+            this.linkProcessor = new TestLinkProcessor();
+            this.host.RegisterLinkProcessor(this.linkProcessor);
+
+            var connection = new Connection(Address);
+            var session1 = new Session(connection);
+            var sender = new SenderLink(session1, name, name);
+            sender.Send(new Message("msg1"), Timeout);
+            sender.Detach();
+
+            sender = new SenderLink(session1, name, name);
+            sender.Send(new Message("msg1"), Timeout);
+            sender.Close();
+
+            connection.Close();
+        }
+
+#if !NETFX40
+        [TestMethod]
+        public async Task ContainerHostLinkDetachNegativeTest()
+        {
+            string name = "ContainerHostLinkDetachNegativeTest";
+            var processor = new TestLinkProcessor();
+            processor.SetDetachHandler(s => { s.Complete(true, null); return true; });
+            this.linkProcessor = processor;
+            this.host.RegisterLinkProcessor(this.linkProcessor);
+
+            var connection = await Connection.Factory.CreateAsync(Address);
+            var session1 = new Session(connection);
+            var sender = new SenderLink(session1, name, name);
+            await sender.SendAsync(new Message("msg1"));
+            try
+            {
+                await sender.DetachAsync();
+                Assert.IsTrue(false, "exception not thrown");
+            }
+            catch (AmqpException ae)
+            {
+                Assert.AreEqual("amqp:internal-error", ae.Error.Condition.ToString());
+            }
+
+            await connection.CloseAsync();
+        }
+#endif
+
+        [TestMethod]
         public void DuplicateLinkNameDifferentRoleTest()
         {
             string name = "DuplicateLinkNameDifferentRoleTest";
@@ -745,7 +793,7 @@ namespace Test.Amqp
             string name = "ContainerHostSaslAnonymousTest";
             ListenerLink link = null;
             var linkProcessor = new TestLinkProcessor();
-            linkProcessor.SetHandler(a => { link = a.Link; return false; });
+            linkProcessor.SetAttachHandler(a => { link = a.Link; return false; });
             this.host.RegisterLinkProcessor(this.linkProcessor = linkProcessor);
 
             var factory = new ConnectionFactory();
@@ -795,7 +843,7 @@ namespace Test.Amqp
             string name = "ContainerHostPlainPrincipalTest";
             ListenerLink link = null;
             var linkProcessor = new TestLinkProcessor();
-            linkProcessor.SetHandler(a => { link = a.Link; return false; });
+            linkProcessor.SetAttachHandler(a => { link = a.Link; return false; });
             this.host.RegisterLinkProcessor(this.linkProcessor = linkProcessor);
 
             var connection = new Connection(Address);
@@ -910,7 +958,7 @@ namespace Test.Amqp
             sslHost.Listeners[0].SASL.EnableExternalMechanism = true;
             ListenerLink link = null;
             var linkProcessor = new TestLinkProcessor();
-            linkProcessor.SetHandler(a => { link = a.Link; return false; });
+            linkProcessor.SetAttachHandler(a => { link = a.Link; return false; });
             sslHost.RegisterLinkProcessor(linkProcessor);
             sslHost.Open();
 
@@ -1036,7 +1084,7 @@ namespace Test.Amqp
         {
             string name = "LinkProcessorAsyncTest";
             var processor = new TestLinkProcessor();
-            processor.SetHandler(
+            processor.SetAttachHandler(
                 a =>
                 {
                     Task.Delay(100).ContinueWith(_ => a.Complete(new TestLinkEndpoint(), 0));
@@ -1226,8 +1274,9 @@ namespace Test.Amqp
 
     class TestLinkProcessor : ILinkProcessor
     {
-        Func<AttachContext, bool> attachHandler;
         readonly Func<ListenerLink, LinkEndpoint> factory;
+        Func<AttachContext, bool> attachHandler;
+        Func<DetachContext, bool> detachHandler;
 
         public TestLinkProcessor()
         {
@@ -1238,9 +1287,14 @@ namespace Test.Amqp
             this.factory = factory;
         }
 
-        public void SetHandler(Func<AttachContext, bool> attachHandler)
+        public void SetAttachHandler(Func<AttachContext, bool> attachHandler)
         {
             this.attachHandler = attachHandler;
+        }
+
+        public void SetDetachHandler(Func<DetachContext, bool> detachHandler)
+        {
+            this.detachHandler = detachHandler;
         }
 
         public void Process(AttachContext attachContext)
@@ -1256,6 +1310,19 @@ namespace Test.Amqp
             attachContext.Complete(
                 this.factory != null ? this.factory(attachContext.Link) : new TestLinkEndpoint(),
                 attachContext.Attach.Role ? 0 : 30);
+        }
+
+        public void Process(DetachContext detachContext)
+        {
+            if (this.detachHandler != null)
+            {
+                if (this.detachHandler(detachContext))
+                {
+                    return;
+                }
+            }
+
+            detachContext.Complete();
         }
     }
 

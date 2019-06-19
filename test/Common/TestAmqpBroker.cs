@@ -243,6 +243,11 @@ namespace Listener.IContainer
             return true;
         }
 
+        public bool DetachLink(ListenerConnection connection, ListenerSession session, Link link, Detach detach)
+        {
+            return true;
+        }
+
         sealed class BrokerMessage : Message
         {
             ByteBuffer buffer;

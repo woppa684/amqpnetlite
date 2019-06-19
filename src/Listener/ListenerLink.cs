@@ -222,6 +222,17 @@ namespace Amqp.Listener
         }
 
         /// <summary>
+        /// Completes the link detach request.
+        /// </summary>
+        /// <param name="detach">The received detach performative.</param>
+        /// <param name="closed">True if the link endpoint is closed.</param>
+        /// <param name="error">The error to be sent to the remote peer.</param>
+        public void CompleteDetach(Detach detach, bool closed, Error error)
+        {
+            base.HandleDetach(detach, closed, error);
+        }
+
+        /// <summary>
         /// Sets a credit on the link. A flow is sent to the peer to update link flow control state.
         /// </summary>
         /// <param name="credit">The new link credit.</param>
@@ -339,6 +350,32 @@ namespace Amqp.Listener
             }
 
             this.CompleteAttach(attach, error);
+        }
+
+        internal override void HandleDetach(Detach detach, bool closed, Error error)
+        {
+            var container = ((ListenerConnection)this.Session.Connection).Listener.Container;
+
+            try
+            {
+                error = null;
+                bool done = container.DetachLink((ListenerConnection)this.Session.Connection, (ListenerSession)this.Session, this, detach);
+                if (!done)
+                {
+                    return;
+                }
+            }
+            catch (AmqpException amqpException)
+            {
+                error = amqpException.Error;
+            }
+            catch (Exception exception)
+            {
+                Trace.WriteLine(TraceLevel.Error, "Exception occurred attaching link: {0}", exception);
+                error = new Error(ErrorCode.InternalError) { Description = exception.Message };
+            }
+
+            base.HandleDetach(detach, true, error);
         }
 
         internal override void OnFlow(Flow flow)
