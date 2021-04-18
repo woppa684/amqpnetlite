@@ -342,7 +342,7 @@ namespace Amqp.Serialization
                 return SerializableType.CreateArrayType(this, type, itemType, listType);
             }
 
-            if (type.GetGenericTypeDefinition() == typeof(IList<>))
+            if (type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(IList<>))
             {
                 // declared type is IList<T> itself instead of an implementation of IList<T>
                 Type[] argTypes = type.GetGenericArguments();
