@@ -55,6 +55,13 @@ namespace Amqp
                 Activator.CreateInstance(type) :
                 System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
         }
+
+        internal static object CreateGenericInstance(this Type type, Type genericType, bool hasDefaultCtor)
+        {
+            return hasDefaultCtor ?
+                Activator.CreateInstance(type.MakeGenericType(genericType)) :
+                System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type.MakeGenericType(genericType));
+        }
 #endif
 #if NETFX35 || NETFX40
         internal static T GetCustomAttribute<T>(this MemberInfo mi, bool inherit)
@@ -114,6 +121,11 @@ namespace Amqp
         internal static object CreateInstance(this Type type, bool hasDefaultCtor)
         {
             return Activator.CreateInstance(type);
+        }
+
+        internal static object CreateGenericInstance(this Type type, Type genericType, bool hasDefaultCtor)
+        {
+            return Activator.CreateInstance(type.MakeGenericType(genericType));
         }
 #endif
     }

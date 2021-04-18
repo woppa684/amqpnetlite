@@ -395,7 +395,17 @@ namespace Amqp.Serialization
                 this.Initialize(buffer, formatCode, out size, out count, out encodeWidth, out effectiveType);
                 int offset = buffer.Offset;
 
-                object container = effectiveType.type.CreateInstance(effectiveType.hasDefaultCtor);
+                object container;
+                if (effectiveType.type.IsGenericType() && effectiveType.type.GetGenericTypeDefinition() == typeof(IList<>))
+                {
+                    // if the declared type was an IList<T>, the values will be read into a System.Collections.Generic.List<T>
+                    container = typeof(List<>).CreateGenericInstance(effectiveType.type.GetGenericArguments()[0], effectiveType.hasDefaultCtor);
+                }
+                else
+                {
+                    container = effectiveType.type.CreateInstance(effectiveType.hasDefaultCtor);
+                }
+                
 
                 if (count > 0)
                 {

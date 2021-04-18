@@ -342,6 +342,16 @@ namespace Amqp.Serialization
                 return SerializableType.CreateArrayType(this, type, itemType, listType);
             }
 
+            if (type.GetGenericTypeDefinition() == typeof(IList<>))
+            {
+                // declared type is IList<T> itself instead of an implementation of IList<T>
+                Type[] argTypes = type.GetGenericArguments();
+                var itemType = this.GetOrCompileType(argTypes[0], false, pendingTypes);
+                // "Add" is on ICollection<T>, which is the first interface IList<T> extends
+                addAccess = MethodAccessor.Create(type.GetInterfaces()[0].GetMethod("Add", argTypes));
+                return SerializableType.CreateGenericListType(this, type, itemType, addAccess);
+            }
+
             foreach (Type it in type.GetInterfaces())
             {
                 if (it.IsGenericType())

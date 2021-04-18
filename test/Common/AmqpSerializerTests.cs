@@ -723,6 +723,78 @@ namespace Test.Amqp
             Assert.AreEqual(p1.Value + 1, p.Value);
         }
 
+        [TestMethod]
+        public void AmqpSerializerNestedListTest()
+        {
+            NestedList nl1 = new NestedList { Name = "nl", Numbers = new List<int> { 0, 1, 2, 3, 4 } };
+
+            ByteBuffer b = new ByteBuffer(512, true);
+            AmqpSerializer.Serialize(b, nl1);
+
+            var serializer = new AmqpSerializer();
+            var nl = serializer.ReadObject<NestedList>(b);
+            Assert.IsTrue(nl != null);
+            Assert.AreEqual("nl", nl.Name);
+            Assert.AreEqual(5, nl.Numbers.Count);
+        }
+
+        [TestMethod]
+        public void AmqpSerializerNestedListOfListTest()
+        {
+            NestedListOfList nl1 = new NestedListOfList
+            {
+                Name = "nl",
+                Numbers = new List<IList<int>>
+                {
+                    new List<int> { 0, 1 },
+                    new List<int> { 2, 3 },
+                    new List<int> { 4 },
+                }
+            };
+
+            ByteBuffer b = new ByteBuffer(512, true);
+            AmqpSerializer.Serialize(b, nl1);
+
+            var serializer = new AmqpSerializer();
+            var nl = serializer.ReadObject<NestedListOfList>(b);
+            Assert.IsTrue(nl != null);
+            Assert.AreEqual("nl", nl.Name);
+            Assert.AreEqual(3, nl.Numbers.Count);
+            Assert.AreEqual(2, nl.Numbers[0].Count);
+            Assert.AreEqual(2, nl.Numbers[1].Count);
+            Assert.AreEqual(1, nl.Numbers[2].Count);
+        }
+
+        [TestMethod]
+        public void AmqpSerializerNestedNestedListTest()
+        {
+            NestedNestedList nl1 = new NestedNestedList
+            {
+                Name = "nl",
+                Numbers = new List<NestedList>
+                {
+                    new NestedList { Name = "n1", Numbers = new List<int> { 0, 1 } },
+                    new NestedList { Name = "n2", Numbers = new List<int> { 2, 3 } },
+                    new NestedList { Name = "n3", Numbers = new List<int> { 4 } },
+                }
+            };
+
+            ByteBuffer b = new ByteBuffer(512, true);
+            AmqpSerializer.Serialize(b, nl1);
+
+            var serializer = new AmqpSerializer();
+            var nl = serializer.ReadObject<NestedNestedList>(b);
+            Assert.IsTrue(nl != null);
+            Assert.AreEqual("nl", nl.Name);
+            Assert.AreEqual(3, nl.Numbers.Count);
+            Assert.AreEqual("n1", nl.Numbers[0].Name);
+            Assert.AreEqual(2, nl.Numbers[0].Numbers.Count);
+            Assert.AreEqual("n2", nl.Numbers[1].Name);
+            Assert.AreEqual(2, nl.Numbers[1].Numbers.Count);
+            Assert.AreEqual("n3", nl.Numbers[2].Name);
+            Assert.AreEqual(1, nl.Numbers[2].Numbers.Count);
+        }
+
 #if !DOTNET
         [TestMethod]
         public void MessageSerializationTest()
